@@ -1,0 +1,26 @@
+# ISO 27001:2022 資訊安全控制項查詢系統 (SPA)
+
+本專案為一個基於 **React + TypeScript + Vite** 開發的輕量級單頁應用程式 (Single Page Application)，旨在提供使用者互動式地查詢 ISO 27001:2022 附錄 A (Annex A) 的 93 項重點控制措施。
+
+## 📚 技術文件
+
+詳細的系統架構、元件設計與資料流邏輯，請參閱技術說明文件：
+- [技術架構與目錄結構 (Architecture Overview) ](docs/technical_architecture.md)
+
+## 🚀 開發與部署
+
+1. **安裝相依套件**：
+   ```bash
+   npm install
+   ```
+
+2. **啟動開發伺服器**：
+   ```bash
+   npm run dev
+   ```
+
+3. **建置正式版本**：
+   ```bash
+   npm run build
+   ```
+   *建立的靜態檔案將輸出至 `dist/` 目錄，可直接部署至任何靜態檔案伺服器 (如 Nginx, GitHub Pages, Vercel 等)。*

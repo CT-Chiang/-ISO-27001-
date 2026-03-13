@@ -1,0 +1,128 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-navy-950 text-slate-100 font-sans antialiased;
+    background: radial-gradient(ellipse at top left, #0f2d47 0%, #020817 50%, #0a0f1e 100%);
+    min-height: 100vh;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-navy-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-navy-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-cyber-500;
+  }
+}
+
+@layer components {
+  /* NOTE: 玻璃擬態卡片元件 */
+  .glass-card {
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(56, 189, 248, 0.1);
+    @apply rounded-xl transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(56, 189, 248, 0.3);
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.08), 0 4px 24px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+  }
+
+  /* NOTE: 分類標籤樣式 */
+  .badge-org {
+    @apply bg-cyber-500/20 text-cyber-400 border border-cyber-500/30;
+  }
+
+  .badge-people {
+    @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30;
+  }
+
+  .badge-physical {
+    @apply bg-amber-500/20 text-amber-400 border border-amber-500/30;
+  }
+
+  .badge-tech {
+    @apply bg-violet-500/20 text-violet-400 border border-violet-500/30;
+  }
+
+  .badge-new {
+    @apply bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold;
+  }
+
+  /* NOTE: 搜尋框樣式 */
+  .search-input {
+    @apply w-full bg-navy-800/80 border border-navy-700 rounded-xl px-4 py-3 text-slate-100 
+           placeholder-slate-500 outline-none transition-all duration-300
+           focus:border-cyber-400 focus:ring-2 focus:ring-cyber-400/20;
+  }
+
+  /* NOTE: 導覽按鈕 */
+  .nav-btn {
+    @apply flex items-center gap-3 w-full px-4 py-3 rounded-xl text-slate-400
+           transition-all duration-200 text-sm font-medium hover:bg-navy-800 hover:text-slate-200;
+  }
+
+  .nav-btn.active {
+    @apply bg-navy-800 text-slate-100;
+  }
+
+  /* NOTE: Drawer 背景遮罩 */
+  .overlay {
+    @apply fixed inset-0 bg-black/60 z-40 backdrop-blur-sm animate-fade-in;
+  }
+
+  /* NOTE: 詳情抽屜 */
+  .detail-drawer {
+    @apply fixed inset-y-0 right-0 w-full sm:w-[600px] lg:w-[680px] bg-navy-900 
+           border-l border-navy-700 z-50 overflow-y-auto animate-slide-in-right;
+  }
+
+  /* NOTE: 情境引導按鈕 */
+  .scenario-tag {
+    @apply px-3 py-2 rounded-lg text-sm border transition-all duration-200 cursor-pointer
+           border-navy-600 text-slate-400 hover:border-cyber-500/50 hover:text-cyber-400 hover:bg-cyber-500/10;
+  }
+
+  .scenario-tag.selected {
+    @apply border-cyber-500 text-cyber-400 bg-cyber-500/15;
+  }
+}
+
+@layer utilities {
+  .text-gradient-cyber {
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glow-cyber {
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+  }
+
+  .border-glow {
+    border-color: rgba(56, 189, 248, 0.5);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+  }
+}

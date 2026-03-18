@@ -4,6 +4,7 @@ interface Props {
   categories: CategoryInfo[];
   active: ControlCategory | 'all';
   onSelect: (cat: ControlCategory | 'all') => void;
+  onClose?: () => void;
   scenarioCount: number;
 }
 
@@ -14,9 +15,21 @@ const colorMap: Record<string, string> = {
   violet: 'text-violet-400 bg-violet-500/20 border-violet-500/40',
 };
 
-export default function CategoryNav({ categories, active, onSelect, scenarioCount }: Props) {
+export default function CategoryNav({ categories, active, onSelect, onClose, scenarioCount }: Props) {
   return (
     <nav className="flex flex-col gap-1">
+      <div className="flex items-center justify-between lg:hidden mb-4 px-2">
+        <span className="text-sm font-bold text-slate-200">選單導覽</span>
+        <button 
+          onClick={onClose}
+          className="p-2 rounded-lg text-slate-400 hover:bg-navy-800 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-4">Annex A 分類</p>
 
       <button

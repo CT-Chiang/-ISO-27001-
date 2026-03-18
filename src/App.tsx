@@ -54,38 +54,45 @@ export default function App() {
     <div className="min-h-screen flex flex-col">
       {/* ─── 頂部標題列 ─── */}
       <header className="sticky top-0 z-30 border-b border-navy-800 bg-navy-950/90 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            {/* NOTE: 行動裝置側欄開關 */}
-            <button
-              className="lg:hidden p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-navy-800 transition-colors"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              aria-label="切換導覽選單"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/>
-              </svg>
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-cyber-500/20 border border-cyber-500/40 flex items-center justify-center flex-shrink-0">
-                <span className="text-cyber-400 text-sm">🔒</span>
-              </div>
-              <div>
-                <h1 className="text-sm font-bold text-gradient-cyber leading-none">ISO 27001:2022</h1>
-                <p className="text-xs text-slate-500 leading-none mt-0.5">資訊安全控制項查詢系統</p>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3 lg:gap-6">
+          {/* NOTE: 第一列：Logo 與 功能按鈕 */}
+          <div className="flex items-center justify-between w-full lg:w-auto gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                className="lg:hidden p-2 -ml-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-navy-800 transition-colors"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="打開導覽選單"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+              </button>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-cyber-500/20 border border-cyber-500/40 flex items-center justify-center flex-shrink-0">
+                  <span className="text-cyber-400 text-sm">🔒</span>
+                </div>
+                <div>
+                  <h1 className="text-sm font-bold text-gradient-cyber leading-none">ISO 27001:2022</h1>
+                  <p className="text-xs text-slate-500 leading-none mt-0.5">控制項查詢系統</p>
+                </div>
               </div>
             </div>
+
+            {/* NOTE: 情境引導按鈕 - 在行動版與 Logo 併排 */}
+            <button
+              onClick={() => setShowScenario(!showScenario)}
+              className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all duration-200 ${showScenario ? 'border-cyber-500 text-cyber-400 bg-cyber-500/10' : 'border-navy-700 text-slate-400 hover:border-cyber-500/50 hover:text-cyber-400'}`}
+              title="情境引導建議"
+            >
+              <span className="text-base">🎯</span>
+              <span className="hidden sm:inline">情境引導</span>
+            </button>
           </div>
-          <div className="flex-1 max-w-xl">
+
+          {/* NOTE: 第二列：搜尋框 (行動版滿版) */}
+          <div className="w-full lg:max-w-xl">
             <SearchBar value={searchQuery} onChange={setSearchQuery} />
           </div>
-          <button
-            onClick={() => setShowScenario(!showScenario)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all duration-200 ${showScenario ? 'border-cyber-500 text-cyber-400 bg-cyber-500/10' : 'border-navy-700 text-slate-400 hover:border-cyber-500/50 hover:text-cyber-400'}`}
-          >
-            <span>🎯</span>
-            <span className="hidden sm:inline">情境引導</span>
-          </button>
         </div>
 
         {/* NOTE: 統計列 */}
@@ -96,19 +103,20 @@ export default function App() {
         {/* ─── 側邊導覽 ─── */}
         <>
           {sidebarOpen && (
-            <div className="fixed inset-0 bg-black/60 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />
+            <div className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
           )}
           <aside className={`
-            fixed lg:static inset-y-0 left-0 z-20 w-64 shrink-0
-            bg-navy-950 lg:bg-transparent
-            transform transition-transform duration-300
+            fixed lg:static inset-y-0 left-0 z-50 w-72 shrink-0
+            bg-navy-950 border-r border-navy-800 lg:border-0 lg:bg-transparent
+            transform transition-transform duration-300 ease-in-out
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-            pt-20 lg:pt-0 px-4 lg:px-0 border-r lg:border-0 border-navy-800
+            px-4 py-6 lg:px-0 lg:py-0
           `}>
             <CategoryNav
               categories={CATEGORIES}
               active={activeCategory}
               onSelect={(cat) => { setActiveCategory(cat); setSidebarOpen(false); }}
+              onClose={() => setSidebarOpen(false)}
               scenarioCount={scenarioControlIds.size}
             />
           </aside>

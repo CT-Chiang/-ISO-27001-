@@ -2,10 +2,16 @@
 
 本專案為一個基於 **React + TypeScript + Vite** 開發的輕量級單頁應用程式 (Single Page Application)，旨在提供使用者互動式地查詢 ISO 27001:2022 附錄 A (Annex A) 的 93 項重點控制措施。
 
+## 🌟 功能亮點
+- **93 項完整控制項**：涵蓋組織、人員、實體、技術四大類別。
+- **行動版優化**：重構 Header 佈局與側選單，解決小螢幕遮蔽問題並強化導覽體驗。
+- **9 大情境引導**：針對雲端遷移、個資處理、DLP 等常見資安場景提供精準推薦。
+- **現代介面**：採用暗色資安風格 (Cybersecurity Dark Theme) 與玻璃擬態設計。
+
 ## 📚 技術文件
 
 詳細的系統架構、元件設計與資料流邏輯，請參閱技術說明文件：
-- [技術架構與目錄結構 (Architecture Overview) ](docs/technical_architecture.md)
+- [技術架構與目錄結構 (Architecture Overview)](docs/technical_architecture.md)
 
 ## 🚀 開發與部署
 

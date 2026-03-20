@@ -23,7 +23,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // NOTE: SoA 狀態管理（含 localStorage 持久化）
-  const { records, updateRecord, resetAll, getExportData } = useSoaStore();
+  const { records, updateRecord, resetAll, applyTemplate, setAllApplicable, getExportData } = useSoaStore();
 
   // NOTE: 情境推薦的控制項 ID 集合
   const scenarioControlIds = useMemo(() => {
@@ -188,6 +188,8 @@ export default function App() {
             records={records}
             onUpdate={updateRecord}
             onReset={resetAll}
+            onApplyTemplate={applyTemplate}
+            onSetAllApplicable={setAllApplicable}
             getExportData={getExportData}
           />
         </div>

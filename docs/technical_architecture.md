@@ -6,7 +6,8 @@
 
 1. **資料流與狀態管理 (State Management)**
    - **Centralized State**：以 `App.tsx` 作為「聰明元件 (Smart Component)」，集中管理 `searchQuery`（搜尋）、`activeCategory`（分類）、`scenarioIds`（情境）、`activeView`（分頁切換）等全域狀態。
-   - **SoA 狀態持久化**：透過自訂 Hook `useSoaStore` 管理 93 項控制項的適用性聲明，每次更新自動同步至 `localStorage`（key: `soa-data`），重新整理頁面後資料不遺失。
+   - **SoA 狀態持久化**：透過自訂 Hook `useSoaStore` 管理 93 項控制項的適用性聲明，每次更新自動同步至 `localStorage`（key: `soa-data`），重新整理頁面後資料不遺失。支援批次操作：`applyTemplate`（場景範本套用）與 `setAllApplicable`（全部適用）。
+   - **場景化範本 (Scenario Templates)**：內建 3 種認證範圍範本（資訊機房 / 雲端機房 / 核心系統），範本資料定義於 `soa-templates.ts`，套用時僅覆寫指定控制項，其餘保持現狀。未填寫理由的項目自動填入類別預設理由。
    - **Derived State**：在 `App.tsx` 中大量使用 `useMemo`，根據目前的狀態動態組合出 `filteredControls`，再將過濾後的結果作為 props 往下層遞給展示型元件 (Dumb Components)。
    - **單向資料流**：確保各 `components/` 互相獨立，提升元件的可重用性與測試便利性。
 
@@ -49,10 +50,11 @@ D:\SynologyDrive\ISO27001-Web
     │   └── 📄 index.ts          # 定義 Control、CategoryInfo、SoaRecord、SoaStatus 等核心型別
     │
     ├── data/                    # 本地端靜態資料層
-    │   └── 📄 controls-data.ts  # ISO 27001:2022 完整 93 項控制措施資料集與情境設定
+    │   ├── 📄 controls-data.ts  # ISO 27001:2022 完整 93 項控制措施資料集與情境設定
+    │   └── 📄 soa-templates.ts  # 場景化範本定義（3 種認證範圍範本與類別預設理由）
     │
     ├── hooks/                   # 自訂 React Hooks
-    │   └── 📄 use-soa-store.ts  # SoA 狀態管理 Hook（localStorage 持久化、CRUD、匯出資料組裝）
+    │   └── 📄 use-soa-store.ts  # SoA 狀態管理 Hook（localStorage 持久化、CRUD、範本套用、匯出資料組裝）
     │
     ├── utils/                   # 工具函數
     │   └── 📄 export-soa-xlsx.ts # SoA Excel 匯出（SheetJS 核心 API，含欄寬與表頭設定）
@@ -65,7 +67,7 @@ D:\SynologyDrive\ISO27001-Web
         ├── 📄 SearchBar.tsx     # 頂部：關鍵字與編號搜尋輸入框 (已停用 autoComplete 提升安全性)
         ├── 📄 StatsBar.tsx      # 頂部：所有過濾結果與總計數據儀表板
         ├── 📄 ScenarioAdvisor.tsx # 情境引導面板：依使用者情境推薦特定 ISO 控制項
-        ├── 📄 SoaEditor.tsx     # SoA 編輯器：適用性表格、統計摘要、Excel 匯出
+        ├── 📄 SoaEditor.tsx     # SoA 編輯器：適用性表格、場景範本選單、防錯警語、Excel 匯出
         ├── 📄 ControlGrid.tsx     # 網格容器：負責動態排版控制項卡片
         ├── 📄 ControlCard.tsx     # 單一控制項卡片摘要 (含 Glassmorphism 樣式與標籤)
         └── 📄 ControlDetail.tsx   # 互動式抽屜 (Drawer)：顯示控制項目標、要求與技術實務細節

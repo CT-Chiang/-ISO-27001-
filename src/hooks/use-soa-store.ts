@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { SoaRecord, SoaStatus } from '../types';
 import { CONTROLS } from '../data/controls-data';
+import type { SoaTemplate } from '../data/soa-templates';
+import { DEFAULT_REASONS } from '../data/soa-templates';
 
 const STORAGE_KEY = 'soa-data';
 
@@ -47,11 +49,15 @@ function loadFromStorage(): SoaRecord[] {
 }
 
 /**
+ * 依控制項編號取得其所屬類別前綴（如 "5.1" → "5"）。
+ * 用於套用範本時填入對應類別的預設理由。
+ */
+function getCategoryPrefix(controlId: string): string {
+  return controlId.split('.')[0];
+}
+
+/**
  * SoA 狀態管理 Hook — 負責讀寫與 localStorage 持久化。
- *
- * 為什麼不使用 useReducer？
- * 目前狀態更新模式單純（單筆局部更新），useState + callback 足以應付，
- * 符合單人專案「避免過度設計」的原則。
  */
 export function useSoaStore() {
   const [records, setRecords] = useState<SoaRecord[]>(loadFromStorage);
@@ -83,6 +89,48 @@ export function useSoaStore() {
     setRecords(defaults);
   }, []);
 
+  /**
+   * 套用場景化範本。
+   * NOTE: 僅覆寫範本中明確定義的控制項，未列出者維持現狀。
+   *       若理由欄位為空則填入對應類別的預設理由。
+   */
+  const applyTemplate = useCallback((template: SoaTemplate) => {
+    setRecords(prev =>
+      prev.map(r => {
+        const override = template.controlsOverride[r.controlId];
+        if (override) {
+          // NOTE: 範本明確指定的項目 — 覆寫適用性與理由
+          return {
+            ...r,
+            applicable: override.applicable,
+            justification: override.justification,
+            status: override.applicable ? r.status : 'not_applicable' as SoaStatus,
+          };
+        }
+        // NOTE: 未被範本覆寫的項目 — 若理由為空則填入類別預設理由
+        if (!r.justification) {
+          const prefix = getCategoryPrefix(r.controlId);
+          const defaultReason = DEFAULT_REASONS[prefix];
+          if (defaultReason) {
+            return { ...r, justification: defaultReason };
+          }
+        }
+        return r;
+      })
+    );
+  }, []);
+
+  /** 將所有控制項設為適用 */
+  const setAllApplicable = useCallback(() => {
+    setRecords(prev =>
+      prev.map(r => ({
+        ...r,
+        applicable: true,
+        status: r.status === 'not_applicable' ? 'not_started' as SoaStatus : r.status,
+      }))
+    );
+  }, []);
+
   /** 取得用於匯出的合併資料（SoA record + 控制項元資料） */
   const getExportData = useCallback(() => {
     return records.map(r => {
@@ -100,5 +148,6 @@ export function useSoaStore() {
     });
   }, [records]);
 
-  return { records, updateRecord, resetAll, getExportData };
+  return { records, updateRecord, resetAll, applyTemplate, setAllApplicable, getExportData };
 }
+

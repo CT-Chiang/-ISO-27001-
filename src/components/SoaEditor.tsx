@@ -2,12 +2,16 @@ import { useState, useMemo } from 'react';
 import type { SoaRecord, SoaStatus, ControlCategory } from '../types';
 import { SOA_STATUS_LABELS } from '../types';
 import { CONTROLS, CATEGORIES } from '../data/controls-data';
+import { SOA_TEMPLATES } from '../data/soa-templates';
+import type { SoaTemplate } from '../data/soa-templates';
 import { exportSoaToXlsx } from '../utils/export-soa-xlsx';
 
 interface Props {
   records: SoaRecord[];
   onUpdate: (controlId: string, partial: Partial<Omit<SoaRecord, 'controlId'>>) => void;
   onReset: () => void;
+  onApplyTemplate: (template: SoaTemplate) => void;
+  onSetAllApplicable: () => void;
   getExportData: () => Array<{
     controlId: string;
     title: string;
@@ -28,10 +32,13 @@ const STATUS_COLORS: Record<SoaStatus, string> = {
   not_applicable: 'bg-rose-500/20 text-rose-400 border-rose-500/30',
 };
 
-export default function SoaEditor({ records, onUpdate, onReset, getExportData }: Props) {
+export default function SoaEditor({
+  records, onUpdate, onReset, onApplyTemplate, onSetAllApplicable, getExportData,
+}: Props) {
   const [filterCategory, setFilterCategory] = useState<ControlCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmTemplate, setConfirmTemplate] = useState<string | null>(null);
 
   // NOTE: 統計摘要
   const stats = useMemo(() => {
@@ -78,8 +85,19 @@ export default function SoaEditor({ records, onUpdate, onReset, getExportData }:
       setConfirmReset(false);
     } else {
       setConfirmReset(true);
-      // NOTE: 5 秒後自動取消確認狀態，防止使用者忘記
       setTimeout(() => setConfirmReset(false), 5000);
+    }
+  };
+
+  /** 範本套用確認流程（防止誤觸） */
+  const handleTemplateSelect = (templateId: string) => {
+    if (confirmTemplate === templateId) {
+      const template = SOA_TEMPLATES.find(t => t.id === templateId);
+      if (template) onApplyTemplate(template);
+      setConfirmTemplate(null);
+    } else {
+      setConfirmTemplate(templateId);
+      setTimeout(() => setConfirmTemplate(null), 5000);
     }
   };
 
@@ -93,6 +111,57 @@ export default function SoaEditor({ records, onUpdate, onReset, getExportData }:
           <p className="text-xs text-amber-400/80 mt-0.5">
             本工具僅供範本產出，請勿輸入任何公司敏感機密資訊於瀏覽器中。所有資料僅儲存於您的瀏覽器 localStorage，不會傳輸至任何伺服器。
           </p>
+        </div>
+      </div>
+
+      {/* ─── 場景化範本選單 ─── */}
+      <div className="glass-card p-4 border border-navy-700">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-base">📑</span>
+          <h3 className="text-sm font-semibold text-slate-200">選擇認證範圍範本</h3>
+          <span className="text-xs text-slate-500">（套用後僅覆寫範本指定項目，其餘保持不變）</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {SOA_TEMPLATES.map(t => {
+            const isConfirming = confirmTemplate === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => handleTemplateSelect(t.id)}
+                className={`
+                  text-left p-3 rounded-xl border transition-all duration-200
+                  ${isConfirming
+                    ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/30 animate-pulse'
+                    : 'border-navy-700 bg-navy-800/40 hover:border-cyber-500/50 hover:bg-navy-800/60'}
+                `}
+              >
+                <p className={`text-sm font-medium ${isConfirming ? 'text-amber-300' : 'text-slate-200'}`}>
+                  {isConfirming ? '⚡ 確認套用？再按一次' : t.name}
+                </p>
+                <p className="text-xs text-slate-500 mt-1 line-clamp-2">{t.description}</p>
+                <p className="text-xs text-cyber-400/60 mt-1.5">
+                  覆寫 {Object.keys(t.controlsOverride).length} 項控制項
+                </p>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 快速操作按鈕 */}
+        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-navy-700/50">
+          <button
+            onClick={onSetAllApplicable}
+            className="text-xs px-3 py-1.5 rounded-lg border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all"
+          >
+            ✅ 全部適用 (Yes)
+          </button>
+          <button
+            onClick={handleReset}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${confirmReset ? 'border-rose-500 text-rose-400 bg-rose-500/10 animate-pulse' : 'border-navy-700 text-slate-500 hover:text-slate-300 hover:border-slate-600'}`}
+          >
+            {confirmReset ? '確認？再按一次' : '🔄 全部重置'}
+          </button>
         </div>
       </div>
 
@@ -163,86 +232,94 @@ export default function SoaEditor({ records, onUpdate, onReset, getExportData }:
         {/* 表格列 */}
         <div className="divide-y divide-navy-800 max-h-[60vh] overflow-y-auto">
           {filteredRecords.map(r => (
-            <div
-              key={r.controlId}
-              className={`
-                grid grid-cols-1 lg:grid-cols-[80px_1fr_80px_1fr_160px] gap-2 lg:gap-3
-                px-4 py-3 transition-colors hover:bg-navy-800/40
-                ${!r.applicable ? 'opacity-50' : ''}
-              `}
-            >
-              {/* 編號 */}
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-sm font-bold text-cyber-400">{r.controlId}</span>
-                {r.control?.isNew && (
-                  <span className="badge-new px-1.5 py-0.5 rounded text-[10px] lg:hidden">NEW</span>
-                )}
+            <div key={r.controlId}>
+              <div
+                className={`
+                  grid grid-cols-1 lg:grid-cols-[80px_1fr_80px_1fr_160px] gap-2 lg:gap-3
+                  px-4 py-3 transition-colors hover:bg-navy-800/40
+                  ${!r.applicable ? 'opacity-50' : ''}
+                `}
+              >
+                {/* 編號 */}
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-sm font-bold text-cyber-400">{r.controlId}</span>
+                  {r.control?.isNew && (
+                    <span className="badge-new px-1.5 py-0.5 rounded text-[10px] lg:hidden">NEW</span>
+                  )}
+                </div>
+
+                {/* 名稱 */}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm text-slate-300 truncate">{r.control?.title}</span>
+                  {r.control?.isNew && (
+                    <span className="badge-new px-1.5 py-0.5 rounded text-[10px] hidden lg:inline-block flex-shrink-0">NEW</span>
+                  )}
+                </div>
+
+                {/* 適用性開關 */}
+                <div className="flex items-center justify-start lg:justify-center">
+                  <label className="lg:hidden text-xs text-slate-500 mr-2">適用：</label>
+                  <button
+                    onClick={() => onUpdate(r.controlId, {
+                      applicable: !r.applicable,
+                      ...(!r.applicable ? {} : { status: 'not_applicable' as SoaStatus }),
+                      ...(r.applicable ? {} : { status: 'not_started' as SoaStatus }),
+                    })}
+                    className={`
+                      w-10 h-5 rounded-full relative transition-colors duration-200 flex-shrink-0
+                      ${r.applicable ? 'bg-cyber-500' : 'bg-navy-600'}
+                    `}
+                    aria-label={r.applicable ? '標記為不適用' : '標記為適用'}
+                  >
+                    <span className={`
+                      absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200
+                      ${r.applicable ? 'translate-x-5' : 'translate-x-0.5'}
+                    `} />
+                  </button>
+                </div>
+
+                {/* 理由 */}
+                <div className="flex items-center">
+                  <label className="lg:hidden text-xs text-slate-500 mr-2 flex-shrink-0">理由：</label>
+                  <input
+                    type="text"
+                    value={r.justification}
+                    onChange={e => onUpdate(r.controlId, { justification: e.target.value })}
+                    placeholder={r.applicable ? '適用理由（選填）' : '排除理由（必填）'}
+                    className={`w-full bg-navy-800/60 border rounded-lg px-2.5 py-1.5 text-xs text-slate-300 placeholder-slate-600 outline-none transition-colors ${!r.applicable && !r.justification ? 'border-rose-500/50 focus:border-rose-500' : 'border-navy-700 focus:border-cyber-500/50'}`}
+                    autoComplete="off"
+                    spellCheck="false"
+                  />
+                </div>
+
+                {/* 狀態 */}
+                <div className="flex items-center">
+                  <label className="lg:hidden text-xs text-slate-500 mr-2 flex-shrink-0">狀態：</label>
+                  <select
+                    value={r.status}
+                    onChange={e => onUpdate(r.controlId, { status: e.target.value as SoaStatus })}
+                    className={`
+                      w-full text-xs px-2.5 py-1.5 rounded-lg border outline-none transition-colors cursor-pointer
+                      bg-navy-800/60 ${STATUS_COLORS[r.status]}
+                      focus:ring-1 focus:ring-cyber-500/30
+                    `}
+                  >
+                    {(Object.entries(SOA_STATUS_LABELS) as [SoaStatus, string][]).map(([value, label]) => (
+                      <option key={value} value={value} className="bg-navy-900 text-slate-300">
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* 名稱 */}
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-sm text-slate-300 truncate">{r.control?.title}</span>
-                {r.control?.isNew && (
-                  <span className="badge-new px-1.5 py-0.5 rounded text-[10px] hidden lg:inline-block flex-shrink-0">NEW</span>
-                )}
-              </div>
-
-              {/* 適用性開關 */}
-              <div className="flex items-center justify-start lg:justify-center">
-                <label className="lg:hidden text-xs text-slate-500 mr-2">適用：</label>
-                <button
-                  onClick={() => onUpdate(r.controlId, {
-                    applicable: !r.applicable,
-                    // NOTE: 當切換為「不適用」時自動更新狀態
-                    ...(!r.applicable ? {} : { status: 'not_applicable' as SoaStatus }),
-                    ...(r.applicable ? {} : { status: 'not_started' as SoaStatus }),
-                  })}
-                  className={`
-                    w-10 h-5 rounded-full relative transition-colors duration-200 flex-shrink-0
-                    ${r.applicable ? 'bg-cyber-500' : 'bg-navy-600'}
-                  `}
-                  aria-label={r.applicable ? '標記為不適用' : '標記為適用'}
-                >
-                  <span className={`
-                    absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200
-                    ${r.applicable ? 'translate-x-5' : 'translate-x-0.5'}
-                  `} />
-                </button>
-              </div>
-
-              {/* 理由 */}
-              <div className="flex items-center">
-                <label className="lg:hidden text-xs text-slate-500 mr-2 flex-shrink-0">理由：</label>
-                <input
-                  type="text"
-                  value={r.justification}
-                  onChange={e => onUpdate(r.controlId, { justification: e.target.value })}
-                  placeholder={r.applicable ? '適用理由（選填）' : '排除理由'}
-                  className="w-full bg-navy-800/60 border border-navy-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 placeholder-slate-600 outline-none focus:border-cyber-500/50 transition-colors"
-                  autoComplete="off"
-                  spellCheck="false"
-                />
-              </div>
-
-              {/* 狀態 */}
-              <div className="flex items-center">
-                <label className="lg:hidden text-xs text-slate-500 mr-2 flex-shrink-0">狀態：</label>
-                <select
-                  value={r.status}
-                  onChange={e => onUpdate(r.controlId, { status: e.target.value as SoaStatus })}
-                  className={`
-                    w-full text-xs px-2.5 py-1.5 rounded-lg border outline-none transition-colors cursor-pointer
-                    bg-navy-800/60 ${STATUS_COLORS[r.status]}
-                    focus:ring-1 focus:ring-cyber-500/30
-                  `}
-                >
-                  {(Object.entries(SOA_STATUS_LABELS) as [SoaStatus, string][]).map(([value, label]) => (
-                    <option key={value} value={value} className="bg-navy-900 text-slate-300">
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* NOTE: 防錯警語 — 當設為「不適用」且理由為空時顯示稽核提示 */}
+              {!r.applicable && !r.justification && (
+                <div className="mx-4 mb-3 px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs text-rose-400 flex items-start gap-2">
+                  <span className="flex-shrink-0">⚠️</span>
+                  <span>稽核提示：排除此項需在上方理由欄位詳細說明補償性控制措施，否則可能導致 NC 缺失。</span>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -260,12 +337,6 @@ export default function SoaEditor({ records, onUpdate, onReset, getExportData }:
           共 {filteredRecords.length} / {records.length} 項 · 自動儲存至瀏覽器
         </p>
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleReset}
-            className={`text-xs px-4 py-2 rounded-lg border transition-all ${confirmReset ? 'border-rose-500 text-rose-400 bg-rose-500/10 animate-pulse' : 'border-navy-700 text-slate-500 hover:text-slate-300 hover:border-slate-600'}`}
-          >
-            {confirmReset ? '確認重設？再按一次' : '🗑️ 重設全部'}
-          </button>
           <button
             onClick={handleExport}
             className="text-xs px-4 py-2 rounded-lg border border-cyber-500 text-cyber-400 bg-cyber-500/10 hover:bg-cyber-500/20 transition-all font-medium"

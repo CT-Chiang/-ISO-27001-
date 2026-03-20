@@ -27,3 +27,24 @@ export interface ScenarioOption {
   label: string;
   recommendedControls: string[]; // control id list
 }
+
+// NOTE: SoA（適用性聲明）編輯器所需型別
+
+/** 控制項實施狀態 */
+export type SoaStatus = 'not_started' | 'in_progress' | 'implemented' | 'not_applicable';
+
+/** 單一控制項的 SoA 紀錄 */
+export interface SoaRecord {
+  controlId: string;
+  applicable: boolean;
+  justification: string;
+  status: SoaStatus;
+}
+
+/** SoA 狀態下拉選單標籤對應 */
+export const SOA_STATUS_LABELS: Record<SoaStatus, string> = {
+  not_started: '尚未開始',
+  in_progress: '實施中',
+  implemented: '已實施',
+  not_applicable: '不適用',
+};

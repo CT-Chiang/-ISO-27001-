@@ -7,14 +7,23 @@ import ControlGrid from './components/ControlGrid';
 import ControlDetail from './components/ControlDetail';
 import ScenarioAdvisor from './components/ScenarioAdvisor';
 import StatsBar from './components/StatsBar';
+import SoaEditor from './components/SoaEditor';
+import { useSoaStore } from './hooks/use-soa-store';
+
+/** 應用分頁類型 */
+type AppView = 'controls' | 'soa';
 
 export default function App() {
+  const [activeView, setActiveView] = useState<AppView>('controls');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<ControlCategory | 'all'>('all');
   const [selectedControlId, setSelectedControlId] = useState<string | null>(null);
   const [scenarioIds, setScenarioIds] = useState<string[]>([]);
   const [showScenario, setShowScenario] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // NOTE: SoA 狀態管理（含 localStorage 持久化）
+  const { records, updateRecord, resetAll, getExportData } = useSoaStore();
 
   // NOTE: 情境推薦的控制項 ID 集合
   const scenarioControlIds = useMemo(() => {
@@ -78,69 +87,111 @@ export default function App() {
               </div>
             </div>
 
-            {/* NOTE: 情境引導按鈕 - 在行動版與 Logo 併排 */}
-            <button
-              onClick={() => setShowScenario(!showScenario)}
-              className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all duration-200 ${showScenario ? 'border-cyber-500 text-cyber-400 bg-cyber-500/10' : 'border-navy-700 text-slate-400 hover:border-cyber-500/50 hover:text-cyber-400'}`}
-              title="情境引導建議"
-            >
-              <span className="text-base">🎯</span>
-              <span className="hidden sm:inline">情境引導</span>
-            </button>
+            {/* NOTE: 分頁切換與情境引導按鈕群 */}
+            <div className="flex items-center gap-2">
+              {/* 分頁切換：控制項查詢 */}
+              <button
+                onClick={() => setActiveView('controls')}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all duration-200 ${activeView === 'controls' ? 'border-cyber-500 text-cyber-400 bg-cyber-500/10' : 'border-navy-700 text-slate-500 hover:text-slate-300'}`}
+              >
+                <span>🔍</span>
+                <span className="hidden sm:inline">控制項</span>
+              </button>
+
+              {/* 分頁切換：SoA 編輯器 */}
+              <button
+                onClick={() => setActiveView('soa')}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all duration-200 ${activeView === 'soa' ? 'border-cyber-500 text-cyber-400 bg-cyber-500/10' : 'border-navy-700 text-slate-500 hover:text-slate-300'}`}
+              >
+                <span>📋</span>
+                <span className="hidden sm:inline">SoA 編輯器</span>
+              </button>
+
+              {/* 情境引導（僅在控制項頁面顯示） */}
+              {activeView === 'controls' && (
+                <button
+                  onClick={() => setShowScenario(!showScenario)}
+                  className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all duration-200 ${showScenario ? 'border-cyber-500 text-cyber-400 bg-cyber-500/10' : 'border-navy-700 text-slate-500 hover:text-slate-300'}`}
+                  title="情境引導建議"
+                >
+                  <span>🎯</span>
+                  <span className="hidden sm:inline">情境引導</span>
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* NOTE: 第二列：搜尋框 (行動版滿版) */}
-          <div className="w-full lg:max-w-xl">
-            <SearchBar value={searchQuery} onChange={setSearchQuery} />
-          </div>
-        </div>
-
-        {/* NOTE: 統計列 */}
-        <StatsBar total={CONTROLS.length} filtered={filteredControls.length} categories={CATEGORIES} />
-      </header>
-
-      <div className="flex flex-1 max-w-7xl mx-auto w-full px-4 py-6 gap-6">
-        {/* ─── 側邊導覽 ─── */}
-        <>
-          {sidebarOpen && (
-            <div className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-          )}
-          <aside className={`
-            fixed lg:static inset-y-0 left-0 z-50 w-72 shrink-0
-            bg-navy-950 border-r border-navy-800 lg:border-0 lg:bg-transparent
-            transform transition-transform duration-300 ease-in-out
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-            px-4 py-6 lg:px-0 lg:py-0
-          `}>
-            <CategoryNav
-              categories={CATEGORIES}
-              active={activeCategory}
-              onSelect={(cat) => { setActiveCategory(cat); setSidebarOpen(false); }}
-              onClose={() => setSidebarOpen(false)}
-              scenarioCount={scenarioControlIds.size}
-            />
-          </aside>
-        </>
-
-        {/* ─── 主內容區 ─── */}
-        <main className="flex-1 min-w-0">
-          {showScenario && (
-            <div className="mb-6">
-              <ScenarioAdvisor
-                scenarios={SCENARIOS}
-                selectedIds={scenarioIds}
-                onToggle={(id) => setScenarioIds(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id])}
-                onClear={() => setScenarioIds([])}
-              />
+          {/* NOTE: 第二列：搜尋框（僅在控制項頁面顯示） */}
+          {activeView === 'controls' && (
+            <div className="w-full lg:max-w-xl">
+              <SearchBar value={searchQuery} onChange={setSearchQuery} />
             </div>
           )}
-          <ControlGrid
-            controls={filteredControls}
-            onSelect={setSelectedControlId}
-            highlightIds={scenarioControlIds}
+        </div>
+
+        {/* NOTE: 統計列（僅在控制項頁面顯示） */}
+        {activeView === 'controls' && (
+          <StatsBar total={CONTROLS.length} filtered={filteredControls.length} categories={CATEGORIES} />
+        )}
+      </header>
+
+      {/* ─── 控制項查詢頁面 ─── */}
+      {activeView === 'controls' && (
+        <div className="flex flex-1 max-w-7xl mx-auto w-full px-4 py-6 gap-6">
+          {/* 側邊導覽 */}
+          <>
+            {sidebarOpen && (
+              <div className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+            )}
+            <aside className={`
+              fixed lg:static inset-y-0 left-0 z-50 w-72 shrink-0
+              bg-navy-950 border-r border-navy-800 lg:border-0 lg:bg-transparent
+              transform transition-transform duration-300 ease-in-out
+              ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+              px-4 py-6 lg:px-0 lg:py-0
+            `}>
+              <CategoryNav
+                categories={CATEGORIES}
+                active={activeCategory}
+                onSelect={(cat) => { setActiveCategory(cat); setSidebarOpen(false); }}
+                onClose={() => setSidebarOpen(false)}
+                scenarioCount={scenarioControlIds.size}
+              />
+            </aside>
+          </>
+
+          {/* 主內容區 */}
+          <main className="flex-1 min-w-0">
+            {showScenario && (
+              <div className="mb-6">
+                <ScenarioAdvisor
+                  scenarios={SCENARIOS}
+                  selectedIds={scenarioIds}
+                  onToggle={(id) => setScenarioIds(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id])}
+                  onClear={() => setScenarioIds([])}
+                />
+              </div>
+            )}
+            <ControlGrid
+              controls={filteredControls}
+              onSelect={setSelectedControlId}
+              highlightIds={scenarioControlIds}
+            />
+          </main>
+        </div>
+      )}
+
+      {/* ─── SoA 編輯器頁面 ─── */}
+      {activeView === 'soa' && (
+        <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
+          <SoaEditor
+            records={records}
+            onUpdate={updateRecord}
+            onReset={resetAll}
+            getExportData={getExportData}
           />
-        </main>
-      </div>
+        </div>
+      )}
 
       {/* ─── 控制項詳情抽屜 ─── */}
       {selectedControl && (
